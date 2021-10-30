@@ -10,6 +10,7 @@ use tokio::time;
 use std::{path::Path, str::FromStr, time::Duration};
 use web3::{
     contract::{Contract, Options},
+    ethabi::RawLog,
     transports::Http,
     types::{Address, BlockNumber, FilterBuilder, U256},
 };
@@ -178,6 +179,17 @@ async fn filter_events(request_manager: &contracts::ContractInfo, web3: web3::We
     loop {
         let a = web3.eth().logs(filter.clone()).await.unwrap();
         log::info!("Found {} events", a.len());
+
+        if let Some(log) = a.last() {
+            let ev = event
+                .parse_log(RawLog {
+                    topics: log.topics.clone(),
+                    data: log.data.clone().0,
+                })
+                .unwrap();
+
+            log::info!("{:?}", ev);
+        }
 
         const BETWEEN: Duration = Duration::from_secs(1);
         time::sleep(BETWEEN).await;

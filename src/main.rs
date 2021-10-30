@@ -75,7 +75,7 @@ async fn send_events(contract: Contract<Http>) {
                 &prvk,
             )
             .await;
-        println!("Sent tx: {:?}", amount);
+        log::info!("Request receipt: {:?}", amount);
 
         const BETWEEN: Duration = Duration::from_secs(1);
         time::sleep(BETWEEN).await;
@@ -102,7 +102,7 @@ async fn prepare_token(contract: Contract<Http>) {
         )
         .await
         .unwrap();
-    println!("got tx: {:?}", tx);
+    log::info!("mint receipt: {:?}", tx);
 
     let tx = contract
         .signed_call_with_confirmations(
@@ -114,7 +114,7 @@ async fn prepare_token(contract: Contract<Http>) {
         )
         .await
         .unwrap();
-    println!("got tx: {:?}", tx);
+    log::info!("approve receipt: {:?}", tx);
 }
 
 #[tokio::main]
@@ -154,7 +154,7 @@ async fn main() -> web3::Result {
     });
 
     let h2 = tokio::spawn(async move {
-        filter_events(&request_manager, block_number, web3).await;
+        filter_events(&request_manager, web3).await;
     });
 
     let result = tokio::join!(h1, h2);
@@ -163,11 +163,7 @@ async fn main() -> web3::Result {
     Ok(())
 }
 
-async fn filter_events(
-    request_manager: &contracts::ContractInfo,
-    block_number: web3::types::U64,
-    web3: web3::Web3<Http>,
-) {
+async fn filter_events(request_manager: &contracts::ContractInfo, web3: web3::Web3<Http>) {
     let contract = web3::ethabi::Contract::load(request_manager.get_abi().as_slice()).unwrap();
     let event = contract.event("RequestCreated").unwrap();
     let filter = FilterBuilder::default()
@@ -181,7 +177,7 @@ async fn filter_events(
 
     loop {
         let a = web3.eth().logs(filter.clone()).await.unwrap();
-        println!("Found {} events", a.len());
+        log::info!("Found {} events", a.len());
 
         const BETWEEN: Duration = Duration::from_secs(1);
         time::sleep(BETWEEN).await;
